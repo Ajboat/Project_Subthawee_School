@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสารสนเทศแผนปฏิบัติการ 2568</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (UMD) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Custom Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInFromRight { from { transform: translateX(2rem); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .animate-in { animation-duration: 500ms; animation-fill-mode: both; }
+        .fade-in { animation-name: fadeIn; }
+        .slide-in-from-right-8 { animation-name: slideInFromRight; }
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+    <!-- Google Fonts for Thai Language -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // --- ICON COMPONENTS (แทนที่ lucide-react เพื่อให้ทำงานในไฟล์เดียวได้) ---
+        const IconWrapper = ({ className, children, title }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {title && <title>{title}</title>}
+                {children}
+            </svg>
+        );
+        const Users = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconWrapper>;
+        const Briefcase = (props) => <IconWrapper {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconWrapper>;
+        const BookOpen = (props) => <IconWrapper {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconWrapper>;
+        const Settings = (props) => <IconWrapper {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></IconWrapper>;
+        const FileText = (props) => <IconWrapper {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></IconWrapper>;
+        const Target = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconWrapper>;
+        const Wallet = (props) => <IconWrapper {...props}><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></IconWrapper>;
+        const Globe = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></IconWrapper>;
+        const ChevronRight = (props) => <IconWrapper {...props}><path d="m9 18 6-6-6-6"/></IconWrapper>;
+        const UserCheck = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></IconWrapper>;
+        const Building = (props) => <IconWrapper {...props}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></IconWrapper>;
+        const MapPin = (props) => <IconWrapper {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconWrapper>;
+        const GraduationCap = (props) => <IconWrapper {...props}><path d="M21.42 10.922a2 2 0 0 0-.019-3.838L12.83 4.3a2 2 0 0 0-1.66 0l-8.571 2.783a2 2 0 0 0-.019 3.838l8.567 2.859a2 2 0 0 0 1.664 0l8.571-2.859Z"/><path d="M14 11.65v5.81a2 2 0 0 1-1.029 1.748l-1.961 1.053a2 2 0 0 1-1.92 0l-1.961-1.053A2 2 0 0 1 6 17.46v-5.81"/><path d="M22 10v6"/></IconWrapper>;
+        const Award = (props) => <IconWrapper {...props}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></IconWrapper>;
+        const Bookmark = (props) => <IconWrapper {...props}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></IconWrapper>;
+
+        // --- MOCK DATA ---
+        const projectsData = [
+          {
+            id: 1, department: { th: 'งานกิจการนักเรียน', en: 'Student Affairs' },
+            name: { th: 'วันสำคัญ/คุณธรรมสำนึกดี', en: 'Important Days / Moral Awareness' },
+            budget: 12000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางสาวพัชรินทร์ มีครุฑ', en: 'Miss Patcharin Meekrut' }],
+            details: { th: 'จัดกิจกรรมวันสำคัญเพื่อปลูกฝังคุณธรรม จริยธรรม ค่านิยมที่ดี และการอนุรักษ์วัฒนธรรมไทย', en: 'Organize important day activities to cultivate morals, ethics, good values, and Thai culture conservation.' },
+            page: '126-129'
+          },
+          {
+            id: 2, department: { th: 'งานกิจการนักเรียน', en: 'Student Affairs' },
+            name: { th: 'ดูแลช่วยเหลือนักเรียน', en: 'Student Care and Support' },
+            budget: 10000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นายจิรายุ นวลขาว', en: 'Mr. Jirayu Nuankhao' }, { th: 'นายนนทวัฒน์ ผุดกุล', en: 'Mr. Nontawat Phudkul' }],
+            details: { th: 'พัฒนาระบบดูแลช่วยเหลือนักเรียน ป้องกันปัญหาเสี่ยง และส่งเสริมความปลอดภัยและคุณภาพชีวิตของผู้เรียน', en: 'Develop student care systems, prevent risks, and promote safety and quality of life.' },
+            page: '130-133'
+          },
+          {
+            id: 3, department: { th: 'งานกิจการนักเรียน', en: 'Student Affairs' },
+            name: { th: 'เข้าค่ายพักแรมและศึกษาแหล่งเรียนรู้', en: 'Camping and Field Trips' },
+            budget: 35852, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นายซัยดี ยะลา', en: 'Mr. Saidee Yala' }, { th: 'นางวรรณิศา เทพทุ่งหลวง', en: 'Mrs. Wannisa Theptungluang' }],
+            details: { th: 'จัดกิจกรรมเข้าค่ายลูกเสือและศึกษาแหล่งเรียนรู้ เพื่อพัฒนาวินัย ความรับผิดชอบ และทักษะชีวิต', en: 'Organize scout camps and field trips to develop discipline, responsibility, and life skills.' },
+            page: '134-138'
+          },
+          {
+            id: 4, department: { th: 'งานกิจการนักเรียน', en: 'Student Affairs' },
+            name: { th: 'กีฬาสัมพันธ์', en: 'Sports Relationship' },
+            budget: 5000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นายซัยดี ยะลา', en: 'Mr. Saidee Yala' }],
+            details: { th: 'ส่งเสริมการออกกำลังกาย สุขภาพ และความพร้อมของผู้เรียนในการเข้าร่วมกิจกรรมกีฬาของโรงเรียน', en: 'Promote exercise, health, and student readiness to participate in school sports activities.' },
+            page: '139-141'
+          },
+          {
+            id: 5, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'บ้านนักวิทยาศาสตร์น้อยทรัพย์ทวี', en: 'Little Scientists House' },
+            budget: 10000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางสาวสุรางคนา ไม้แก้ว', en: 'Miss Surangkana Maikaew' }],
+            details: { th: 'ส่งเสริมการเรียนรู้วิทยาศาสตร์แบบลงมือทดลองสำหรับเด็กปฐมวัย เพื่อพัฒนาทักษะคิด สังเกต และรักวิทยาศาสตร์', en: 'Promote hands-on science learning for early childhood to develop thinking, observation, and love for science.' },
+            page: '37-41'
+          },
+          {
+            id: 6, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'ปัจฉิมนิเทศและบัณฑิตน้อย', en: 'Graduation Ceremony' },
+            budget: 10000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางสาวณัฏฐพร รอดจิตต์', en: 'Miss Nattaporn Rodjit' }],
+            details: { th: 'จัดพิธีบัณฑิตน้อยและปัจฉิมนิเทศ เพื่อสร้างขวัญกำลังใจและความภาคภูมิใจแก่ผู้สำเร็จการศึกษา', en: 'Organize Little Graduates and Graduation ceremonies to boost morale and pride for graduates.' },
+            page: '42-45'
+          },
+          {
+            id: 7, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'เกษตรอินทรีย์เพื่อชีวิตพอเพียง', en: 'Organic Farming for Sufficient Life' },
+            budget: 10000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางสาวอุไรวรรณ นุ่นนุ้ย', en: 'Miss Uraiwan Noonnui' }],
+            details: { th: 'พัฒนาการเรียนรู้ตามหลักเศรษฐกิจพอเพียงและทักษะอาชีพ ผ่านกิจกรรมเกษตรอินทรีย์ในโรงเรียน', en: 'Develop learning based on sufficiency economy and vocational skills through school organic farming.' },
+            page: '46-50'
+          },
+          {
+            id: 8, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'พัฒนาวิชาการ', en: 'Academic Development' },
+            budget: 20000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางดุษฎี บุญส่ง', en: 'Mrs. Dudsadee Boonsong' }],
+            details: { th: 'ยกระดับคุณภาพการจัดการเรียนรู้และการบริหารงานวิชาการให้ผู้เรียนบรรลุมาตรฐานการศึกษา', en: 'Elevate learning management and academic administration quality for students to achieve educational standards.' },
+            page: '51-55'
+          },
+          {
+            id: 9, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'ห้องสมุด 3 ดี', en: '3D Library' },
+            budget: 10000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางสาวบุษราภรณ์ บุญชู', en: 'Miss Butsarakorn Boonchoo' }],
+            details: { th: 'พัฒนาห้องสมุดและนิสัยรักการอ่าน ให้เป็นแหล่งเรียนรู้ที่เอื้อต่อการค้นคว้าและการเรียนรู้ตลอดชีวิต', en: 'Develop library and reading habits into a learning resource conducive to research and lifelong learning.' },
+            page: '56-61'
+          },
+          {
+            id: 10, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'แข่งขันทักษะทางวิชาการ', en: 'Academic Skills Competition' },
+            budget: 30468, target: { th: 'นักเรียนตัวแทนแข่งขัน', en: 'Student Representatives' },
+            owners: [{ th: 'นายนิติพงศ์ คงทอง', en: 'Mr. Nitipong Kongthong' }],
+            details: { th: 'ส่งเสริมผู้เรียนเข้าร่วมแข่งขันและแสดงศักยภาพทางวิชาการ เพื่อพัฒนาความเป็นเลิศของนักเรียน', en: 'Encourage students to participate in competitions and show academic potential to develop excellence.' },
+            page: '62-66'
+          },
+          {
+            id: 11, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'ประกันคุณภาพการศึกษา', en: 'Educational Quality Assurance' },
+            budget: 10848, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นางดุษฎี บุญส่ง', en: 'Mrs. Dudsadee Boonsong' }],
+            details: { th: 'พัฒนาระบบประกันคุณภาพภายในของโรงเรียน ให้มีมาตรฐาน ตรวจสอบได้ และใช้ผลประเมินเพื่อพัฒนา', en: 'Develop the internal quality assurance system to be standard, auditable, and use results for development.' },
+            page: '67-70'
+          },
+          {
+            id: 12, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'ค่ายวิทยาศาสตร์', en: 'Science Camp' },
+            budget: 15000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นางภิญญา สังคะนี', en: 'Mrs. Pinya Sangkani' }],
+            details: { th: 'จัดกิจกรรมค่ายวิทยาศาสตร์เพื่อเสริมทักษะคิดวิเคราะห์ แก้ปัญหา และการเรียนรู้จากประสบการณ์ตรง', en: 'Organize science camps to enhance analytical thinking, problem-solving, and experiential learning.' },
+            page: '71-75'
+          },
+          {
+            id: 13, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'หนึ่งคนหนึ่งดนตรี', en: 'One Person One Instrument' },
+            budget: 10000, target: { th: 'นักเรียนทั้งหมด', en: 'All Students' },
+            owners: [{ th: 'นายนิติพงศ์ คงทอง', en: 'Mr. Nitipong Kongthong' }],
+            details: { th: 'ส่งเสริมให้นักเรียนเรียนรู้ดนตรีไทยและใช้ดนตรีพัฒนาสมาธิ สุนทรียภาพ และความเป็นไทย', en: 'Promote learning of Thai music to develop concentration, aesthetics, and Thainess.' },
+            page: '76-79'
+          },
+          {
+            id: 14, department: { th: 'กลุ่มบริหารวิชาการ', en: 'Academic Affairs' },
+            name: { th: 'จัดซื้อวัสดุ อุปกรณ์การจัดการเรียนการสอน', en: 'Procurement of Teaching Materials' },
+            budget: 40369, target: { th: 'ครูและนักเรียน', en: 'Teachers and Students' },
+            owners: [{ th: 'นางสาวอรอุมา สุขโสม', en: 'Miss Onuma Suksom' }],
+            details: { th: 'จัดหาวัสดุและอุปกรณ์การเรียนการสอน เพื่อสนับสนุนการจัดกิจกรรมที่เน้นผู้เรียนเป็นสำคัญ', en: 'Procure teaching materials and equipment to support student-centered activities.' },
+            page: '80-83'
+          },
+          {
+            id: 15, department: { th: 'กลุ่มบริหารแผนงานและงบประมาณ', en: 'Planning & Budgeting' },
+            name: { th: 'การจัดทำแผนปฏิบัติการประจำปีการศึกษา 2568', en: 'Annual Action Plan 2025' },
+            budget: 5000, target: { th: 'คณะกรรมการและครู', en: 'Committees and Teachers' },
+            owners: [{ th: 'นางภิญญา สังคะนี', en: 'Mrs. Pinya Sangkani' }, { th: 'นางทิพยา ชูจิตร', en: 'Mrs. Tippaya Choochit' }],
+            details: { th: 'จัดทำแผนปฏิบัติการประจำปีให้สอดคล้องกับนโยบาย เป้าหมาย และบริบทของโรงเรียนอย่างเป็นระบบ', en: 'Prepare the annual action plan aligned with school policies, goals, and context systematically.' },
+            page: '84-88'
+          },
+          {
+            id: 16, department: { th: 'กลุ่มบริหารแผนงานและงบประมาณ', en: 'Planning & Budgeting' },
+            name: { th: 'ระดมทรัพยากรและการลงทุนเพื่อการศึกษา', en: 'Resource Mobilization' },
+            budget: 1000, target: { th: 'ชุมชนและผู้เกี่ยวข้อง', en: 'Community and Stakeholders' },
+            owners: [{ th: 'นางสาวอรอุมา สุขโสม', en: 'Miss Onuma Suksom' }],
+            details: { th: 'ส่งเสริมการมีส่วนร่วมของชุมชนและภาคีเครือข่ายในการระดมทรัพยากรเพื่อสนับสนุนการจัดการศึกษา', en: 'Promote community and network participation in mobilizing resources to support education.' },
+            page: '89-91'
+          },
+          {
+            id: 17, department: { th: 'กลุ่มบริหารแผนงานและงบประมาณ', en: 'Planning & Budgeting' },
+            name: { th: 'ปรับปรุง/จัดจ้างซ่อมแซมครุภัณฑ์', en: 'Equipment Repair and Maintenance' },
+            budget: 24000, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นางสาวอรอุมา สุขโสม', en: 'Miss Onuma Suksom' }],
+            details: { th: 'ซ่อมแซมและปรับปรุงครุภัณฑ์ที่ชำรุดให้พร้อมใช้งาน เพื่อสนับสนุนการเรียนการสอนและการบริหารงาน', en: 'Repair and improve damaged equipment for readiness to support teaching and administration.' },
+            page: '92-93'
+          },
+          {
+            id: 18, department: { th: 'กลุ่มบริหารแผนงานและงบประมาณ', en: 'Planning & Budgeting' },
+            name: { th: 'พัฒนาการบริหารการเงิน บัญชี พัสดุและสินทรัพย์', en: 'Finance and Asset Management' },
+            budget: 1188, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นางสาวอรอุมา สุขโสม', en: 'Miss Onuma Suksom' }],
+            details: { th: 'พัฒนาระบบการเงิน บัญชี พัสดุ และสินทรัพย์ของโรงเรียนให้ถูกต้อง โปร่งใส และตรวจสอบได้', en: 'Develop school finance, accounting, parcel, and asset systems to be accurate, transparent, and auditable.' },
+            page: '94-98'
+          },
+          {
+            id: 19, department: { th: 'กลุ่มบริหารทั่วไป', en: 'General Administration' },
+            name: { th: 'สร้างซ่อมแซมปรับปรุงภูมิทัศน์ในโรงเรียน', en: 'Landscape Improvement' },
+            budget: 10000, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นายซัยดี ยะลา', en: 'Mr. Saidee Yala' }],
+            details: { th: 'ปรับปรุงอาคาร สภาพแวดล้อม และภูมิทัศน์ในโรงเรียนให้สะอาด ร่มรื่น ปลอดภัย และเอื้อต่อการเรียนรู้', en: 'Improve buildings, environment, and landscape to be clean, shady, safe, and conducive to learning.' },
+            page: '111-113'
+          },
+          {
+            id: 20, department: { th: 'กลุ่มบริหารทั่วไป', en: 'General Administration' },
+            name: { th: 'ผูกมิตรใกล้ชิดชุมชน', en: 'Community Relations' },
+            budget: 5000, target: { th: 'ชุมชนและผู้ปกครอง', en: 'Community and Parents' },
+            owners: [{ th: 'นางสาวอุไรวรรณ นุ่นนุ้ย', en: 'Miss Uraiwan Noonnui' }],
+            details: { th: 'สร้างความสัมพันธ์และการมีส่วนร่วมระหว่างโรงเรียน ผู้ปกครอง ชุมชน และองค์กรท้องถิ่น', en: 'Build relationships and participation among the school, parents, community, and local organizations.' },
+            page: '114-116'
+          },
+          {
+            id: 21, department: { th: 'กลุ่มบริหารทั่วไป', en: 'General Administration' },
+            name: { th: 'พัฒนาระบบงานธุรการและเอกสารข้อมูลสารสนเทศ / ICT', en: 'Admin, Document, and ICT System' },
+            budget: 12500, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นายนนทวัฒน์ ผุดกุล', en: 'Mr. Nontawat Phudkul' }, { th: 'นายจิรายุ นวลขาว', en: 'Mr. Jirayu Nuankhao' }, { th: 'นางสาวกานต์นรี มโนวราวุฒิ', en: 'Miss Karnnaree Manowarawut' }],
+            details: { th: 'พัฒนางานธุรการ ระบบเอกสาร และข้อมูลสารสนเทศของโรงเรียนให้เป็นระบบ ทันสมัย และใช้งานได้จริง', en: 'Develop school administrative work, document systems, and IT data to be systematic, modern, and practical.' },
+            page: '117-119'
+          },
+          {
+            id: 22, department: { th: 'กลุ่มบริหารทั่วไป', en: 'General Administration' },
+            name: { th: 'จิตสดใสอนามัยเป็นเลิส (ขยะ มลพิษ น้ำ พลังงาน อนามัย)', en: 'Excellent Health and Bright Mind' },
+            budget: 5000, target: { th: 'นักเรียนและบุคลากร', en: 'Students and Staff' },
+            owners: [{ th: 'นายซัยดี ยะลา', en: 'Mr. Saidee Yala' }],
+            details: { th: 'ปลูกจิตสำนึกด้านสิ่งแวดล้อม สุขอนามัย และการประหยัดพลังงาน ผ่านกิจกรรมลดขยะและดูแลสุขภาพ', en: 'Cultivate environmental, health, and energy-saving awareness through waste reduction and health care.' },
+            page: '120-123'
+          },
+          {
+            id: 23, department: { th: 'กลุ่มบริหารทั่วไป', en: 'General Administration' },
+            name: { th: 'ส่งเสริมงานนโยบาย (สำรองจ่าย)', en: 'Policy Promotion (Reserve Fund)' },
+            budget: 55412, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นางภิญญา สังคะนี', en: 'Mrs. Pinya Sangkani' }],
+            details: { th: 'สำรองงบประมาณเพื่อรองรับนโยบายและภารกิจเร่งด่วนของโรงเรียนให้ดำเนินงานได้ต่อเนื่อง', en: 'Reserve budget to support urgent school policies and missions for continuous operation.' },
+            page: '124-125'
+          },
+          {
+            id: 24, department: { th: 'กลุ่มบริหารงานบุคคล', en: 'Personnel Administration' },
+            name: { th: 'จัดจ้างบุคลากรทางการศึกษา', en: 'Personnel Employment' },
+            budget: 72000, target: { th: 'สถานศึกษา', en: 'School' },
+            owners: [{ th: 'นางสาวอรอุมา สุขโสม', en: 'Miss Onuma Suksom' }],
+            details: { th: 'จัดจ้างบุคลากรเพิ่มเติมเพื่อสนับสนุนการจัดการเรียนการสอนและการดำเนินงานของโรงเรียนให้มีประสิทธิภาพ', en: 'Hire additional personnel to support teaching and school operations efficiently.' },
+            page: '103-105'
+          },
+          {
+            id: 25, department: { th: 'กลุ่มบริหารงานบุคคล', en: 'Personnel Administration' },
+            name: { th: 'ส่งเสริมคุณธรรม จริยธรรมของข้าราชการครูและบุคลากร', en: 'Teacher Moral and Ethics Promotion' },
+            budget: 3188, target: { th: 'ครูและบุคลากร', en: 'Teachers and Staff' },
+            owners: [{ th: 'นางสาวพัชรินทร์ มีครุฑ', en: 'Miss Patcharin Meekrut' }, { th: 'นายนนทวัฒน์ ผุดกุล', en: 'Mr. Nontawat Phudkul' }],
+            details: { th: 'ส่งเสริมคุณธรรม จริยธรรม และจรรยาบรรณวิชาชีพของครูและบุคลากรทางการศึกษา', en: 'Promote morals, ethics, and professional code of conduct for teachers and educational staff.' },
+            page: '106-110'
+          },
+          {
+            id: 26, department: { th: 'กลุ่มบริหารงานบุคคล', en: 'Personnel Administration' },
+            name: { th: 'พัฒนาครูและบุคลากรทางการศึกษา', en: 'Teacher and Personnel Development' },
+            budget: 30000, target: { th: 'ครูและบุคลากร', en: 'Teachers and Staff' },
+            owners: [{ th: 'นางมธุรส รัตนะ', en: 'Mrs. Mathurot Rattana' }, { th: 'นางสาวปริชญา น้อยศรีอยู่', en: 'Miss Parichaya Noisriyu' }],
+            details: { th: 'พัฒนาศักยภาพครูและบุคลากรผ่านการอบรม ศึกษาดูงาน และส่งเสริมความก้าวหน้าทางวิชาชีพ', en: 'Develop teacher and staff potential through training, study visits, and promoting professional advancement.' },
+            page: '99-102'
+          }
+        ];
+
+        // --- TRANSLATIONS ---
+        const translations = {
+          th: {
+            title1: 'ระบบสารสนเทศแผนปฏิบัติการ ประจำปีการศึกษา 2568',
+            title2: 'โรงเรียนทรัพย์ทวี อำเภอบ้านนาเดิม จังหวัดสุราษฎร์ธานี',
+            title3: 'สำนักงานเขตพื้นที่การศึกษาประถมศึกษาสุราษฎร์ธานี เขต 3',
+            tab_person: 'ค้นหาตามผู้รับผิดชอบ',
+            tab_dept: 'ค้นหาตามกลุ่มบริหาร',
+            tab_info: 'ข้อมูลทั่วไปสถานศึกษา',
+            select_person: 'เลือกผู้รับผิดชอบโครงการ',
+            select_dept: 'เลือกกลุ่มบริหารงาน',
+            school_info_title: 'ข้อมูลสารสนเทศพื้นฐานสถานศึกษา',
+            projects_of: 'โครงการที่รับผิดชอบโดย',
+            projects_in: 'โครงการใน',
+            budget: 'งบประมาณ:',
+            target: 'เป้าหมาย:',
+            owners: 'ผู้รับผิดชอบ:',
+            details: 'รายละเอียด:',
+            page_ref: 'หน้า',
+            baht: 'บาท',
+            back: 'ย้อนกลับ',
+            total_projects: 'จำนวนโครงการทั้งหมด',
+            info_director: 'ผู้อำนวยการโรงเรียน',
+            info_director_name: 'นางทิพยา ชูจิตร',
+            info_address: 'ที่ตั้ง',
+            info_address_detail: 'อำเภอบ้านนาเดิม จังหวัดสุราษฎร์ธานี',
+            info_affiliation: 'สังกัด',
+            info_affiliation_detail: 'สำนักงานเขตพื้นที่การศึกษาประถมศึกษาสุราษฎร์ธานี เขต 3',
+            info_budget_alloc: 'การจัดสรรงบประมาณเบื้องต้น (ตามระดับชั้น)',
+            info_budget_pre: 'ก่อนประถมศึกษา',
+            info_budget_pri: 'ประถมศึกษา',
+            info_budget_sec: 'มัธยมศึกษา',
+            footer_copyright: '© 2025 Subthawee School. All rights reserved.',
+            footer_dev: 'พัฒนาโดย คุณครูนิติพงศ์ คงทอง ผู้ช่วยกลุ่มบริหารวิชาการระดับประถมศึกษา'
+          },
+          en: {
+            title1: 'Action Plan Information System, Academic Year 2025',
+            title2: 'Subthawee School, Ban Na Doem District, Surat Thani Province',
+            title3: 'Surat Thani Primary Educational Service Area Office 3',
+            tab_person: 'Search by Person',
+            tab_dept: 'Search by Department',
+            tab_info: 'General School Info',
+            select_person: 'Select Responsible Person',
+            select_dept: 'Select Department',
+            school_info_title: 'Basic School Information',
+            projects_of: 'Projects responsible by',
+            projects_in: 'Projects in',
+            budget: 'Budget:',
+            target: 'Target:',
+            owners: 'Owners:',
+            details: 'Details:',
+            page_ref: 'Page',
+            baht: 'THB',
+            back: 'Back',
+            total_projects: 'Total Projects',
+            info_director: 'School Director',
+            info_director_name: 'Mrs. Tippaya Choochit',
+            info_address: 'Location',
+            info_address_detail: 'Ban Na Doem District, Surat Thani Province',
+            info_affiliation: 'Affiliation',
+            info_affiliation_detail: 'Surat Thani Primary Educational Service Area Office 3',
+            info_budget_alloc: 'Initial Budget Allocation (By Level)',
+            info_budget_pre: 'Pre-Primary',
+            info_budget_pri: 'Primary',
+            info_budget_sec: 'Secondary',
+            footer_copyright: '© 2025 Subthawee School. All rights reserved.',
+            footer_dev: 'Developed by Mr. Nitipong Kongthong, Assistant to Primary Academic Affairs'
+          }
+        };
+
+        function App() {
+          const [lang, setLang] = useState('th');
+          const [viewMode, setViewMode] = useState('person'); // 'person', 'dept', or 'info'
+          const [selectedPerson, setSelectedPerson] = useState(null);
+          const [selectedDept, setSelectedDept] = useState(null);
+
+          const t = translations[lang];
+
+          const allTeachers = useMemo(() => {
+            const teachersMap = new Map();
+            projectsData.forEach(proj => {
+              proj.owners.forEach(owner => {
+                if (!teachersMap.has(owner.th)) {
+                  teachersMap.set(owner.th, owner);
+                }
+              });
+            });
+            return Array.from(teachersMap.values());
+          }, []);
+
+          const allDepts = useMemo(() => {
+            const deptsMap = new Map();
+            projectsData.forEach(proj => {
+              if (!deptsMap.has(proj.department.th)) {
+                deptsMap.set(proj.department.th, proj.department);
+              }
+            });
+            return Array.from(deptsMap.values());
+          }, []);
+
+          const displayedProjects = useMemo(() => {
+            if (viewMode === 'person' && selectedPerson) {
+              return projectsData.filter(p => p.owners.some(o => o.th === selectedPerson.th));
+            }
+            if (viewMode === 'dept' && selectedDept) {
+              return projectsData.filter(p => p.department.th === selectedDept.th);
+            }
+            return [];
+          }, [viewMode, selectedPerson, selectedDept]);
+
+          const handleLangToggle = () => setLang(lang === 'th' ? 'en' : 'th');
+          const resetSelection = () => { setSelectedPerson(null); setSelectedDept(null); };
+
+          const getDeptIcon = (deptNameTh) => {
+            if (deptNameTh.includes('วิชาการ')) return <BookOpen className="w-6 h-6" />;
+            if (deptNameTh.includes('งบประมาณ')) return <Wallet className="w-6 h-6" />;
+            if (deptNameTh.includes('บุคคล')) return <Briefcase className="w-6 h-6" />;
+            if (deptNameTh.includes('กิจการ')) return <Users className="w-6 h-6" />;
+            return <Settings className="w-6 h-6" />;
+          };
+
+          return (
+            <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+              
+              {/* HEADER */}
+              <header className="bg-white shadow-md border-b-4 border-blue-800 relative z-10">
+                <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+                  <div className="absolute top-4 right-4 sm:top-6 sm:right-8">
+                    <button 
+                      onClick={handleLangToggle}
+                      className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium transition-all transform hover:scale-105 active:scale-95 shadow-sm"
+                    >
+                      <Globe className="w-4 h-4" />
+                      {lang === 'th' ? 'EN' : 'TH'}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-center md:text-left">
+                    <img 
+                      src="https://img2.pic.in.th/pic/-1b470d085784b70c.gif" 
+                      alt="School Logo" 
+                      className="w-24 h-24 md:w-32 md:h-32 object-contain filter drop-shadow-md"
+                    />
+                    <div>
+                      <h1 className="text-2xl md:text-3xl font-bold text-blue-900 mb-2 tracking-wide">
+                        {t.title1}
+                      </h1>
+                      <h2 className="text-lg md:text-xl font-semibold text-slate-700 mb-1">
+                        {t.title2}
+                      </h2>
+                      <h3 className="text-md text-slate-500">
+                        {t.title3}
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+              </header>
+
+              {/* MAIN CONTENT */}
+              <main className="flex-grow max-w-7xl mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
+                
+                {/* VIEW TOGGLE TABS */}
+                <div className="flex justify-center mb-10 w-full overflow-x-auto pb-4">
+                  <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 inline-flex flex-nowrap whitespace-nowrap min-w-max">
+                    <button
+                      onClick={() => { setViewMode('person'); resetSelection(); }}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                        viewMode === 'person' 
+                          ? 'bg-blue-800 text-white shadow-md transform scale-105' 
+                          : 'text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      <UserCheck className="w-5 h-5" />
+                      <span className="hidden sm:inline">{t.tab_person}</span>
+                      <span className="sm:hidden">ผู้รับผิดชอบ</span>
+                    </button>
+                    <button
+                      onClick={() => { setViewMode('dept'); resetSelection(); }}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                        viewMode === 'dept' 
+                          ? 'bg-blue-800 text-white shadow-md transform scale-105' 
+                          : 'text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Briefcase className="w-5 h-5" />
+                      <span className="hidden sm:inline">{t.tab_dept}</span>
+                      <span className="sm:hidden">กลุ่มบริหาร</span>
+                    </button>
+                    <button
+                      onClick={() => { setViewMode('info'); resetSelection(); }}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                        viewMode === 'info' 
+                          ? 'bg-blue-800 text-white shadow-md transform scale-105' 
+                          : 'text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Building className="w-5 h-5" />
+                      <span className="hidden sm:inline">{t.tab_info}</span>
+                      <span className="sm:hidden">ข้อมูลโรงเรียน</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* CONTENT AREA */}
+                <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-6 md:p-10 min-h-[500px]">
+                  
+                  {/* --- VIEW: SCHOOL INFO --- */}
+                  {viewMode === 'info' && (
+                    <div className="animate-in fade-in">
+                       <div className="text-center mb-10">
+                        <h2 className="text-2xl md:text-3xl font-bold text-slate-800">{t.school_info_title}</h2>
+                        <div className="w-24 h-1 bg-blue-500 mx-auto mt-4 rounded-full"></div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                        <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-colors">
+                          <div className="absolute -right-6 -top-6 text-blue-100 opacity-50 group-hover:scale-110 transition-transform duration-500">
+                            <Building className="w-48 h-48" />
+                          </div>
+                          <div className="relative z-10 space-y-6">
+                            <div className="flex items-start gap-4">
+                              <div className="p-3 bg-blue-100 text-blue-700 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                <Award className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-slate-500 font-semibold mb-1">{t.info_director}</p>
+                                <p className="text-lg font-bold text-slate-800">{t.info_director_name}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-4">
+                              <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                                <MapPin className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-slate-500 font-semibold mb-1">{t.info_address}</p>
+                                <p className="text-lg font-bold text-slate-800">{t.info_address_detail}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-start gap-4">
+                              <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                                <GraduationCap className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-slate-500 font-semibold mb-1">{t.info_affiliation}</p>
+                                <p className="text-lg font-bold text-slate-800">{t.info_affiliation_detail}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-slate-50 to-emerald-50/30 p-8 rounded-3xl border border-slate-200 shadow-sm hover:border-emerald-300 transition-colors">
+                          <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                            <Wallet className="w-6 h-6 text-emerald-600" />
+                            {t.info_budget_alloc}
+                          </h3>
+                          
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-emerald-200 transition-colors">
+                              <span className="font-semibold text-slate-600">{t.info_budget_pre}</span>
+                              <span className="text-lg font-bold text-emerald-700">43,384 {t.baht}</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-emerald-200 transition-colors">
+                              <span className="font-semibold text-slate-600">{t.info_budget_pri}</span>
+                              <span className="text-lg font-bold text-emerald-700">158,688 {t.baht}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-emerald-200 transition-colors">
+                              <span className="font-semibold text-slate-600">{t.info_budget_sec}</span>
+                              <span className="text-lg font-bold text-emerald-700">151,800 {t.baht}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- VIEW: PERSON --- */}
+                  {viewMode === 'person' && !selectedPerson && (
+                    <div className="animate-in fade-in">
+                      <div className="text-center mb-8">
+                        <h2 className="text-2xl font-bold text-slate-800">{t.select_person}</h2>
+                        <div className="w-24 h-1 bg-blue-500 mx-auto mt-4 rounded-full"></div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {allTeachers.map((teacher, idx) => {
+                          const projectCount = projectsData.filter(p => p.owners.some(o => o.th === teacher.th)).length;
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => setSelectedPerson(teacher)}
+                              className="group relative flex flex-col items-center p-6 bg-slate-50 border border-slate-200 rounded-2xl hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-lg"
+                            >
+                              <div className="w-16 h-16 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                <UserCheck className="w-8 h-8" />
+                              </div>
+                              <span className="font-medium text-slate-700 group-hover:text-blue-900 text-center text-sm md:text-base">
+                                {teacher[lang]}
+                              </span>
+                              
+                              <span className="absolute top-3 right-3 bg-white border border-slate-200 text-slate-500 text-xs font-bold px-2 py-1 rounded-full shadow-sm group-hover:border-blue-300 group-hover:text-blue-600">
+                                {projectCount} โครงการ
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- VIEW: DEPARTMENT --- */}
+                  {viewMode === 'dept' && !selectedDept && (
+                    <div className="animate-in fade-in">
+                       <div className="text-center mb-8">
+                        <h2 className="text-2xl font-bold text-slate-800">{t.select_dept}</h2>
+                        <div className="w-24 h-1 bg-blue-500 mx-auto mt-4 rounded-full"></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {allDepts.map((dept, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedDept(dept)}
+                            className="flex items-center gap-4 p-6 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-2xl hover:border-blue-400 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md text-left group"
+                          >
+                            <div className="p-4 bg-blue-100 text-blue-700 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                              {getDeptIcon(dept.th)}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-bold text-slate-800 group-hover:text-blue-800">{dept[lang]}</h3>
+                              <p className="text-sm text-slate-500 mt-1">
+                                 {t.total_projects}: {projectsData.filter(p => p.department.th === dept.th).length}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-6 h-6 text-slate-400 group-hover:text-blue-600 transform group-hover:translate-x-1 transition-all" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- DETAIL VIEW (SHOW PROJECTS) --- */}
+                  {((viewMode === 'person' && selectedPerson) || (viewMode === 'dept' && selectedDept)) && (
+                    <div className="animate-in slide-in-from-right-8">
+                      
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-200 gap-4">
+                        <div>
+                          <h2 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-3">
+                            {viewMode === 'person' ? <UserCheck className="w-8 h-8 text-blue-600 hidden sm:block" /> : getDeptIcon(selectedDept?.th)}
+                            {viewMode === 'person' ? t.projects_of : t.projects_in}: 
+                            <span className="text-blue-700 ml-2">
+                              {viewMode === 'person' ? selectedPerson[lang] : selectedDept[lang]}
+                            </span>
+                          </h2>
+                        </div>
+                        <button 
+                          onClick={resetSelection}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all hover:-translate-x-1 whitespace-nowrap"
+                        >
+                          <ChevronRight className="w-5 h-5 rotate-180" />
+                          {t.back}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {displayedProjects.map((project) => (
+                          <div key={project.id} className="bg-white border-2 border-slate-100 rounded-2xl p-6 hover:border-blue-300 hover:shadow-xl transition-all duration-300 flex flex-col h-full relative overflow-hidden group">
+                            
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700 ease-out z-0"></div>
+
+                            <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 text-sm font-bold rounded-lg border border-amber-200 shadow-sm z-20 transition-all hover:bg-amber-100" title="หน้าอ้างอิงในเอกสารแผนปฏิบัติการ">
+                              <Bookmark className="w-4 h-4" />
+                              {t.page_ref} {project.page}
+                            </div>
+
+                            <div className="relative z-10 flex-grow pt-2">
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg mb-4 uppercase tracking-wide">
+                                {getDeptIcon(project.department.th)}
+                                {project.department[lang]}
+                              </div>
+
+                              <h3 className="text-xl font-bold text-slate-800 mb-4 leading-snug pr-24">
+                                {project.name[lang]}
+                              </h3>
+
+                              <div className="space-y-3 mb-6">
+                                <div className="flex items-start gap-3">
+                                  <Target className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <span className="text-sm font-semibold text-slate-500 block">{t.target}</span>
+                                    <span className="text-slate-700">{project.target[lang]}</span>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-start gap-3">
+                                  <FileText className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <span className="text-sm font-semibold text-slate-500 block">{t.details}</span>
+                                    <span className="text-slate-700 text-sm leading-relaxed">{project.details[lang]}</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-4">
+                                  <Users className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <span className="text-sm font-semibold text-slate-500 block">{t.owners}</span>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      {project.owners.map((owner, idx) => (
+                                        <span 
+                                          key={idx} 
+                                          className={`text-sm px-2.5 py-1 rounded-md ${
+                                            (viewMode === 'person' && selectedPerson && owner.th === selectedPerson.th)
+                                              ? 'bg-indigo-100 text-indigo-800 font-bold border border-indigo-200 shadow-sm' 
+                                              : 'bg-white text-slate-600 border border-slate-200'
+                                          }`}
+                                        >
+                                          {owner[lang]}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="relative z-10 pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
+                              <span className="text-sm font-semibold text-slate-500">{t.budget}</span>
+                              <span className="text-lg font-bold text-blue-700 bg-blue-50 px-4 py-1.5 rounded-lg border border-blue-100">
+                                {project.budget.toLocaleString()} {t.baht}
+                              </span>
+                            </div>
+
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {displayedProjects.length === 0 && (
+                        <div className="text-center py-20 text-slate-400">
+                          <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg">ไม่มีข้อมูลโครงการในหมวดหมู่นี้</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              </main>
+
+              {/* FOOTER */}
+              <footer className="bg-slate-900 text-slate-400 py-10 mt-12">
+                <div className="max-w-7xl mx-auto px-4 text-center">
+                  <p className="text-sm font-medium tracking-wider mb-2">
+                    {t.footer_copyright}
+                  </p>
+                  <div className="w-16 h-0.5 bg-blue-500 mx-auto my-4 opacity-50"></div>
+                  <p className="text-xs md:text-sm text-slate-500">
+                    {t.footer_dev}
+                  </p>
+                </div>
+              </footer>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
